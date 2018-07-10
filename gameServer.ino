@@ -1,8 +1,7 @@
 
-//make selection static
-//build display of game or players into routine and di every 5 sec
+//make selection static - ie not side scrolling
+//
 //generic slection routine?
-
 
 //matrix setup
 #include <Adafruit_GFX.h>
@@ -116,12 +115,12 @@ void loop() {
       }
     }
   }
-
+  // this section just allow simuation via kboard if controllers are not availble - and toggling of debug mode and pausing
   char ch = Serial.read();
   if (!(ch == 255)) {
     Serial.println(int(ch));
     isPacket = true;
-    if (ch == 49) {
+    if (ch == 49) { //1 on kvd
       sw[1] = 0;
     } else {
       sw[1] = 1;
@@ -137,12 +136,12 @@ void loop() {
       sw[3] = 1;
     }
 
-    if ((ch == 52) && (!(gameMode == 14))) {
+    if ((ch == 52) && (!(gameMode == 14))) { // 4 is pause
       test3 = gameMode;  gameMode = 14;
       Serial.print("Pause on");
       isPacket = false;
     }
-    if (ch == 53) {
+    if (ch == 53) { //5 toggles debug
       debug = !debug;
       Serial.printf("debug is %d", debug);
       isPacket = false;
@@ -150,258 +149,251 @@ void loop() {
 
     cont = 2;
   }
-  if (gameMode == 14) {
-    //just pauses current game
-    if (isPacket) {
-      gameMode = test3;
-      Serial.print("Pause off");
-    }
-  }
-  if (gameMode == 0) {
-    //gamemode 0 is startup
-    display_scrollText("Players? ");
-    for (int i = 0; i <= maxPlayers; i++) {
-      score[i] = 0;
-
-    }
-    for (int i = controllerMin; i <= controllerMax; i++) {
-      Serial.printf("Count %d\n", i);
-      setcontall(i, 0, 0, 0);
-      controller[i] = 0;
-      controller[i + 5] = 0;
-
-    }
-    Serial.println (i);
-    gameCounter == 30;
-    gameMode = 2;
-  }
-
-  if (gameMode == 2) {
-
-    //gamemode 2 is select number of players
-    if (inProg) {} else {
-      display_scrollText(numberPlayers);
-    }
-    if (isPacket) {
-      if (sw[1] == 0) {
-        numberPlayers++;
-        if (numberPlayers > maxPlayers) {
-          numberPlayers = minPlayers;
-        }
-      }
-      if (sw[2] == 0) {
-        isPacket = false;
-        gameMode = 3;
-      }
-    }
-  }
-  if (gameMode == 3) {
-    //gamemode 3 is display game?
-    display_scrollText("Game? ");
-    gameMode = 4;
-  }
-  if (gameMode == 4) {
-
-    //gamemode 14 is select game
-    if (inProg) {} else {
-      display_scrollText(game);
-    }
-    if (isPacket) {
-      if (sw[1] == 0) {
-        game++;
-        if (game > maxgame) {
-          game = 1;
-        }
-      }
-      if (sw[2] == 0) {
-        if (game == 1) {
-          gameMode = 100;
-          actionChance = 100;
-        }
-        if (game == 2) {
-          gameMode = 100;
-          actionChance = 30;
-        }
-        if (game == 3) {
-          gameMode = 110;
-          actionChance = 100;
-        }
-        if (game == 4) {
-          gameMode = 110;
-          actionChance = 100;
-        }
-      }
-    }
-  }
-  if (gameMode == 15) {
-    // this is just a matrix test\
-    test1++;
-    if (test1 % 30 == 0) {
-      test2++;
-      int p = test2 % (maxPlayers + 1);
-      for (int i = 0; i < 11; i++) {
-        for (int j = 0; j < 11; j++) {
-          matrix->drawPixel(i, j, matrix->Color(i * 25, j * 25, ((test2 % 25) * 10)));
-        }
-      }
-
-      matrix->show();
-    }
-  }
-  if (gameMode == 20) {
-    if (gameCounter % 40 == 20) {
-      matrix->fillRect(0, 0, 9, 9, c24to16(playerColours[winner]));
-      matrix->show();
-      for (int i = 2; i < 5; i++) {
-        setcontall(i, playerColours[winner]);
-      }
-    }
-    if (gameCounter % 40 == 0) {
-      matrix->fillRect(0, 0, 9, 9, playerColours[0]);
-      matrix->show();
-      for (int i = 2; i < 5; i++) {
-        setcontall(i, playerColours[0]);
-      }
-    }
-    //gamemode 20 is pause after win
-    if (gameCounter == 0) {
+  switch (gameMode) {
+    case 14:
+      //just pauses current game
       if (isPacket) {
-        gameMode = 0;
-        gameCounter = gameCounterReset;
+        gameMode = test3;
+        Serial.print("Pause off");
       }
-    } else {
-      gameCounter--;
-    }
-  }
-
-
-  if (gameMode == 100) {
-    //gamemode 100 is game 1
-    if (random (1, actionChance) == 3) {
-      // controllerNumber is the controller number
-      int controllerNumber = random(2, 4);
-      int playerNumber = random(1, 7);
-      if (playerNumber <= numberPlayers) {
-        if (debug) {
-          Serial.printf ("\nSet player %d controller %d colour %d\n", playerNumber, controllerNumber), playerColours[playerNumber];
-        }
-        setcontall(controllerNumber, playerColours[playerNumber]);
-        controller[controllerNumber] = playerNumber;
-      } else {
-        controller[controllerNumber] = 0;
-        setcontall(controllerNumber, 0, 0, 0);
-        if (debug) {
-          Serial.printf ("\nReset controller %d", controllerNumber);
-        }
+      break;
+    case 0:
+      //gamemode 0 is startup
+      display_scrollText("Players? ");
+      for (int i = 0; i <= maxPlayers; i++) {
+        score[i] = 0;
 
       }
+      for (int i = controllerMin; i <= controllerMax; i++) {
+        Serial.printf("Count %d\n", i);
+        setcontall(i, 0, 0, 0);
+        controller[i] = 0;
+        controller[i + 5] = 0;
 
-
-    }
-
-
-
-    if (((sw[1] + sw[2] + sw[3]) == 3)) {} else {
-      if (controller[cont] == 0) {} else {
-        if (debug) {
-          Serial.printf ("\nmatch player %d colour %d controller %d\n", controller[cont], playerColours[controller[cont]], cont);
+      }
+      Serial.println (i);
+      gameCounter == 30;
+      gameMode = 2;
+      break;
+    case 2:    //gamemode 2 is select number of players
+      if (inProg) {} else {
+        display_scrollText(numberPlayers);
+      }
+      if (isPacket) {
+        if (sw[1] == 0) {
+          numberPlayers++;
+          if (numberPlayers > maxPlayers) {
+            numberPlayers = minPlayers;
+          }
         }
-        setcontall(cont, 0, 0, 0);
-        score[controller[cont]]++;
-        matrix->drawPixel(controller[cont], score[controller[cont]] , c24to16(playerColours[controller[cont]]));
+        if (sw[2] == 0) {
+          isPacket = false;
+          gameMode = 3;
+        }
+      }
+      break;
+    case 3:    //gamemode 3 is display game?
+      display_scrollText("Game? ");
+      gameMode = 4;
+      break;
+    case 4: //gamemode 14 is select game
+      if (inProg) {} else {
+        display_scrollText(game);
+      }
+      if (isPacket) {
+        if (sw[1] == 0) {
+          game++;
+          if (game > maxgame) {
+            game = 1;
+          }
+        }
+        if (sw[2] == 0) {
+          if (game == 1) {
+            gameMode = 100;
+            actionChance = 100;
+          }
+          if (game == 2) {
+            gameMode = 100;
+            actionChance = 30;
+          }
+          if (game == 3) {
+            gameMode = 110;
+            actionChance = 100;
+          }
+          if (game == 4) {
+            gameMode = 110;
+            actionChance = 100;
+          }
+        }
+      }
+      break;
+    case 15:
+      // this is just a matrix test\
+      test1++;
+      if (test1 % 30 == 0) {
+        test2++;
+        int p = test2 % (maxPlayers + 1);
+        for (int i = 0; i < 11; i++) {
+          for (int j = 0; j < 11; j++) {
+            matrix->drawPixel(i, j, matrix->Color(i * 25, j * 25, ((test2 % 25) * 10)));
+          }
+        }
+
         matrix->show();
-        if (score[controller[cont]] == 6) {
-          winner = controller[cont];
-
-          for (int i = 0; i < 5; i++) {
-            score[i] = 0;
-            controller[i] = 0;
-          }
-          gameMode = 20;
-
-        }
-        controller[cont] = 0;
-
       }
-    }
-  }
 
-
-  if (gameMode == 110) {
-    //gamemode 110 is game 2
-    if (random (1, actionChance) == 3) {
-      // controllerNumber is the controller number
-      int controllerNumber = random(2, 4);
-      int side = random(1, 3);
-      int playerNumber = random(1, 7);
-      if (playerNumber <= numberPlayers) {
-        if (debug) {
-          Serial.printf ("\nSet player %d controller %d colour %d side %d\n", playerNumber, controllerNumber, playerColours[playerNumber], side);
+      break;
+    case 20: //flashes everything on a win
+      if (gameCounter % 40 == 20) {
+        matrix->fillRect(0, 0, 9, 9, c24to16(playerColours[winner]));
+        matrix->show();
+        for (int i = 2; i < 5; i++) {
+          setcontall(i, playerColours[winner]);
         }
-        setcontall(controllerNumber, side, playerColours[playerNumber]);
-        controller[controllerNumber + ((side - 1) * 5)] = playerNumber;
-        if (game == 4) {
-          int playerNumber2 = random(1, numberPlayers);
-          if (playerNumber2 == playerNumber) {
-            playerNumber2 = numberPlayers;
-          }
-          if (side == 1) {
-            side = 2;
-          } else {
-            side = 1;
-          }
-          setcontall(controllerNumber, side, playerColours[playerNumber2]);
-          controller[controllerNumber + ((side - 1) * 5)] = playerNumber2;
+      }
+      if (gameCounter % 40 == 0) {
+        matrix->fillRect(0, 0, 9, 9, playerColours[0]);
+        matrix->show();
+        for (int i = 2; i < 5; i++) {
+          setcontall(i, playerColours[0]);
+        }
+      }
+      //gamemode 20 is pause after win
+      if (gameCounter == 0) {
+        if (isPacket) {
+          gameMode = 0;
+          gameCounter = gameCounterReset;
         }
       } else {
-        if (game == 4) {
-          controller[controllerNumber] = 0;
-          controller[controllerNumber + 5] = 0;
-          setcontall(controllerNumber, 0, 0, 0);
-
-        } else
-          controller[controllerNumber + ((side - 1) * 5)] = 0;
-        setcontall(controllerNumber, side, 0, 0, 0);
+        gameCounter--;
       }
-      Serial.print ("Reset controller");
-      Serial.println (controllerNumber + ((side - 1) * 5));
-    }
-
-
-  }
-  if (((sw[2] == 0) || (sw[1] == 0)) && isPacket) {
-    int offset = 0;
-    if (sw[1] == 0) {
-      offset = 5;
-    }
-
-    if (controller[cont + offset] == 0) {} else {
-      if (debug) {
-        Serial.printf ("\nmatch player %d colour %d controller %d offset %d\n", controller[cont + offset], playerColours[controller[cont + offset]], cont, offset);
-      }
-      if (game == 4) {
-        if (offset == 0) {
-          controller[cont + 5] = 0;
-          setcontall(cont, 2, 0, 0, 0);
+      break;
+    case 100:  //gamemode 100 is game 1
+      if (random (1, actionChance) == 3) {
+        // controllerNumber is the controller number
+        int controllerNumber = random(2, 4);
+        int playerNumber = random(1, 7);
+        if (playerNumber <= numberPlayers) {
+          if (debug) {
+            Serial.printf ("\nSet player %d controller %d colour %d\n", playerNumber, controllerNumber), playerColours[playerNumber];
+          }
+          setcontall(controllerNumber, playerColours[playerNumber]);
+          controller[controllerNumber] = playerNumber;
         } else {
-          controller[cont] = 0;
-          setcontall(cont, 1, 0, 0, 0);
+          controller[controllerNumber] = 0;
+          setcontall(controllerNumber, 0, 0, 0);
+          if (debug) {
+            Serial.printf ("\nReset controller %d", controllerNumber);
+          }
 
         }
-        setcontall(cont, 1 + (offset / 5), 0, 0, 0);
-        score[controller[cont + offset]]++;
-        matrix->drawPixel(controller[cont + offset], score[controller[cont + offset]] , c24to16(playerColours[controller[cont + offset]]));
-        matrix->show();
 
-        if (score[controller[cont + offset]] == 6) {
-          winner = controller[cont + offset];
-          gameMode = 20;
-        }
-        controller[cont + offset] = 0;
+
       }
-    }
-  }
 
+
+
+      if (((sw[1] + sw[2] + sw[3]) == 3)) {} else {
+        if (controller[cont] == 0) {} else {
+          if (debug) {
+            Serial.printf ("\nmatch player %d colour %d controller %d\n", controller[cont], playerColours[controller[cont]], cont);
+          }
+          setcontall(cont, 0, 0, 0);
+          score[controller[cont]]++;
+          matrix->drawPixel(controller[cont], score[controller[cont]] , c24to16(playerColours[controller[cont]]));
+          matrix->show();
+          if (score[controller[cont]] == 6) {
+            winner = controller[cont];
+
+            for (int i = 0; i < 5; i++) {
+              score[i] = 0;
+              controller[i] = 0;
+            }
+            gameMode = 20;
+
+          }
+          controller[cont] = 0;
+
+        }
+      }
+      break;
+    case 110: //gamemode 110 is game 2
+      if (random (1, actionChance) == 3) {
+        // controllerNumber is the controller number
+        int controllerNumber = random(2, 4);
+        int side = random(1, 3);
+        int playerNumber = random(1, 7);
+        if (playerNumber <= numberPlayers) {
+          if (debug) {
+            Serial.printf ("\nSet player %d controller %d colour %d side %d\n", playerNumber, controllerNumber, playerColours[playerNumber], side);
+          }
+          setcontall(controllerNumber, side, playerColours[playerNumber]);
+          controller[controllerNumber + ((side - 1) * 5)] = playerNumber;
+          if (game == 4) {
+            int playerNumber2 = random(1, numberPlayers);
+            if (playerNumber2 == playerNumber) {
+              playerNumber2 = numberPlayers;
+            }
+            if (side == 1) {
+              side = 2;
+            } else {
+              side = 1;
+            }
+            setcontall(controllerNumber, side, playerColours[playerNumber2]);
+            controller[controllerNumber + ((side - 1) * 5)] = playerNumber2;
+          }
+        } else {
+          if (game == 4) {
+            controller[controllerNumber] = 0;
+            controller[controllerNumber + 5] = 0;
+            setcontall(controllerNumber, 0, 0, 0);
+
+          } else
+            controller[controllerNumber + ((side - 1) * 5)] = 0;
+          setcontall(controllerNumber, side, 0, 0, 0);
+        }
+        Serial.print ("Reset controller");
+        Serial.println (controllerNumber + ((side - 1) * 5));
+      }
+
+
+
+      if (((sw[2] == 0) || (sw[1] == 0)) && isPacket) {
+        int offset = 0;
+        if (sw[1] == 0) {
+          offset = 5;
+        }
+
+        if (controller[cont + offset] == 0) {} else {
+          if (debug) {
+            Serial.printf ("\nmatch player %d colour %d controller %d offset %d\n", controller[cont + offset], playerColours[controller[cont + offset]], cont, offset);
+          }
+          if (game == 4) {
+            if (offset == 0) {
+              controller[cont + 5] = 0;
+              setcontall(cont, 2, 0, 0, 0);
+            } else {
+              controller[cont] = 0;
+              setcontall(cont, 1, 0, 0, 0);
+
+            }
+            setcontall(cont, 1 + (offset / 5), 0, 0, 0);
+            score[controller[cont + offset]]++;
+            matrix->drawPixel(controller[cont + offset], score[controller[cont + offset]] , c24to16(playerColours[controller[cont + offset]]));
+            matrix->show();
+
+            if (score[controller[cont + offset]] == 6) {
+              winner = controller[cont + offset];
+              gameMode = 20;
+            }
+            controller[cont + offset] = 0;
+          }
+        }
+      }
+      break;
+    default:
+      break;
+  }
 
   //send keepalive
   if (millis() > (oldmillis + 200)) {
