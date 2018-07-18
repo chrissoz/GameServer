@@ -96,4 +96,15 @@ void display_scrollText(int Text) {
   display_scrollText(String(Text));
 }
 
+void displayText(int Text) {
+          matrix->clear();
+        matrix->setCursor(0, 0);
+        matrix->setTextColor(LED_GREEN_HIGH);
+        matrix->print(Text);
+        matrix->show();
+
+}
+
+
+
 

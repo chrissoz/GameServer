@@ -1,6 +1,6 @@
 
-//make selection static - ie not side scrolling
-//
+//make selection static - ie not side scrolling - done with some issues
+//game 3 does not work
 //generic slection routine?
 
 //matrix setup
@@ -33,9 +33,9 @@ WiFiUDP Udp;
 int gameMode = 0;
 #define gameCounterReset 500
 int gameCounter = gameCounterReset;
-int winScore = 9;
+int winScore = 10;
 int winner = 0;
-bool debug = true;
+bool debug = false;
 char incomingPacket[255];
 //int controllerCount = 0;
 //int playerColours[6][3] = {{0, 0, 0}, {255, 0, 0}, {0, 255, 0}, {0, 0, 255}, {255, 255, 0}, {255, 0, 255}};
@@ -105,13 +105,7 @@ void loop() {
       cont = incomingPacket[0] - 48;
       isPacket = true;
       if (debug) {
-        matrix->drawPixel(6 + cont, 4 , matrix->Color(255, 255, 255));
-        matrix->drawPixel(6 + cont, 1 , matrix->Color(255 * sw[1], 255 * sw[1], 255 * sw[1]));
-        matrix->drawPixel(6 + cont, 2 , matrix->Color(255 * sw[2], 255 * sw[2], 255 * sw[2]));
-        matrix->drawPixel(6 + cont, 3 , matrix->Color(255 * sw[3], 255 * sw[3], 255 * sw[3]));
-        matrix->show();
-        matrix->drawPixel(6 + cont, 4 , matrix->Color(0, 0, 0));
-        matrix->show();
+        displayScreen();
       }
     }
   }
@@ -177,7 +171,7 @@ void loop() {
       break;
     case 2:    //gamemode 2 is select number of players
       if (inProg) {} else {
-        display_scrollText(numberPlayers);
+        displayText(numberPlayers);
       }
       if (isPacket) {
         if (sw[1] == 0) {
@@ -197,9 +191,10 @@ void loop() {
       gameMode = 4;
       break;
     case 4: //gamemode 14 is select game
-      if (inProg) {} else {
-        display_scrollText(game);
-      }
+
+      if (!inProg) {
+        displayText(game);
+      };
       if (isPacket) {
         if (sw[1] == 0) {
           game++;
@@ -208,6 +203,8 @@ void loop() {
           }
         }
         if (sw[2] == 0) {
+          matrix->clear();
+          matrix->show();
           if (game == 1) {
             gameMode = 100;
             actionChance = 100;
@@ -300,15 +297,12 @@ void loop() {
           }
           setcontall(cont, 0, 0, 0);
           score[controller[cont]]++;
-          matrix->drawPixel(controller[cont], score[controller[cont]] , c24to16(playerColours[controller[cont]]));
-          matrix->show();
-          if (score[controller[cont]] == 6) {
+          //         matrix->drawPixel(controller[cont], score[controller[cont]] , c24to16(playerColours[controller[cont]]));
+          //       matrix->show();
+          displayScreen();
+          if (score[controller[cont]] == winScore) {
             winner = controller[cont];
-
-            for (int i = 0; i < 5; i++) {
-              score[i] = 0;
-              controller[i] = 0;
-            }
+            //took rest scores from here as handled in setup?
             gameMode = 20;
 
           }
@@ -373,21 +367,24 @@ void loop() {
               controller[cont + 5] = 0;
               setcontall(cont, 2, 0, 0, 0);
             } else {
+
               controller[cont] = 0;
               setcontall(cont, 1, 0, 0, 0);
 
             }
-            setcontall(cont, 1 + (offset / 5), 0, 0, 0);
-            score[controller[cont + offset]]++;
-            matrix->drawPixel(controller[cont + offset], score[controller[cont + offset]] , c24to16(playerColours[controller[cont + offset]]));
-            matrix->show();
-
-            if (score[controller[cont + offset]] == 6) {
-              winner = controller[cont + offset];
-              gameMode = 20;
-            }
-            controller[cont + offset] = 0;
           }
+          setcontall(cont, 1 + (offset / 5), 0, 0, 0);
+          score[controller[cont + offset]]++;
+          displayScreen();
+          //matrix->drawPixel(controller[cont + offset], score[controller[cont + offset]] , c24to16(playerColours[controller[cont + offset]]));
+          //matrix->show();
+
+          if (score[controller[cont + offset]] == winScore) {
+            winner = controller[cont + offset];
+            gameMode = 20;
+          }
+          controller[cont + offset] = 0;
+
         }
       }
       break;
@@ -433,9 +430,9 @@ void setcontall(int controller, int s, int r, int g, int b) {
     Serial.printf(" %d", leds[controller][i]);
   }
   Serial.println();
-  matrix->drawPixel(8, controller + 4, matrix->Color(leds[controller][0], leds[controller][1], leds[controller][2]));
-  matrix->drawPixel(9, controller + 4, matrix->Color(leds[controller][9], leds[controller][10], leds[controller][11]));
-  matrix->show();
+  if (debug) {
+    displayScreen();
+  }
 }
 void setcontall(int controller, int r, int g, int b) {
   setcontall(controller, 3, r, g, b);
@@ -454,6 +451,35 @@ unsigned int c24to16 (unsigned long int c) {
   int r = ((c >> 16) & 255) >> 3;
   return (b + (g << 5) + (r << 11));
 }
+void displayScreen() {
+  matrix->clear();
+  if (debug) {
+    //  debug for sent packets to controller
+    
+    for (int i=1;i<numberControllers;i++) {
+    
+    matrix->drawPixel(8, i + 4, matrix->Color(leds[i][0], leds[i][1], leds[i][2]));
+   matrix->drawPixel(9, i + 4, matrix->Color(leds[i][9], leds[i][10], leds[i][11]));
+    }
+    //debug for recieved packet from controller
+    matrix->drawPixel(6 + cont, 1 , matrix->Color(255 * sw[1], 255 * sw[1], 255 * sw[1]));
+    matrix->drawPixel(6 + cont, 2 , matrix->Color(255 * sw[2], 255 * sw[2], 255 * sw[2]));
+    matrix->drawPixel(6 + cont, 3 , matrix->Color(255 * sw[3], 255 * sw[3], 255 * sw[3]));
+
+
+  }
+  for (int i = 1; i <= numberPlayers; i++) {
+    if (debug) {
+      Serial.printf("i %d score %d colour %d \n", i, score[1], playerColours[i]);
+    }
+    if (score[i]) {
+      matrix->drawLine(i, 0, i, (score[i] - 1), c24to16(playerColours[i]));
+    }
+  }
+  matrix->show();
+}
+
+
 
 
 
