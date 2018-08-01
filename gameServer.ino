@@ -1,7 +1,9 @@
 
-//make selection static - ie not side scrolling - done with some issues
-//game 3 does not work
+
+
 //generic slection routine?
+//create class for controllers
+//test
 
 //matrix setup
 #include <Adafruit_GFX.h>
@@ -479,9 +481,23 @@ void displayScreen() {
   matrix->show();
 }
 
-
-
-
+class Controller
+{
+  
+  private:
+    int switches [3];
+    int leds[18];
+    int number();
+  public:
+    Controller (int n) {  
+    number=n;
+    }
+    setLed(int led,int colour);
+    {
+      Serial.printf("setting led %d on COntroller %d to %d",number,led,colour)
+    }
+    
+};
 
 
 
