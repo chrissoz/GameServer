@@ -1,4 +1,4 @@
-
+#include "ScrollLib.h"
 
 
 //generic slection routine?
@@ -22,9 +22,13 @@ Adafruit_NeoMatrix *matrix = new Adafruit_NeoMatrix(mw, mh, PIN,
 //network setup
 #include <ESP8266WiFi.h>
 #include "WiFiUdp.h"
-WiFiUDP EthernetUdp;
+//WiFiUDP EthernetUdp;
 unsigned int UDPPort = 58266;  // local port to listen on
 WiFiUDP Udp;
+
+#include "Controller.h"
+Controller cnt[8] = {Controller(0), Controller(1), Controller(2), Controller(3), Controller(4), Controller(5), Controller(6), Controller(7)};
+int numControllers = 3;
 
 
 
@@ -90,6 +94,9 @@ void setup() {
 
 void loop() {
   delay(20);
+  for (int i = 1; i < numControllers; i++) {
+    cnt[i].sendKeepalive();
+  }
   // scrolltext runs ever loop to scroll the text
   display_scrollText("");
   isPacket = false;
@@ -480,24 +487,6 @@ void displayScreen() {
   }
   matrix->show();
 }
-
-class Controller
-{
-  
-  private:
-    int switches [3];
-    int leds[18];
-    int number();
-  public:
-    Controller (int n) {  
-    number=n;
-    }
-    setLed(int led,int colour);
-    {
-      Serial.printf("setting led %d on COntroller %d to %d",number,led,colour)
-    }
-    
-};
 
 
 
