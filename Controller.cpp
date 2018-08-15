@@ -1,5 +1,6 @@
 //network setup
 #include <ESP8266WiFi.h>
+//#include <WiFi.h>
 #include "WiFiUdp.h"
 #include "Controller.h"
 unsigned int controllerUDPPort = 58266;  // local port to listen on
@@ -13,14 +14,14 @@ Controller::Controller (int n) {
 
 void  Controller::setLed(int led, int r, int g, int b)
 {
-  Serial.printf("setting led %d on COntroller %d to %d %d %d\n", led, number, r, g, b);
+  //Serial.printf("setting led %d on COntroller %d to %d %d %d\n", led, number, r, g, b);
   leds[led * 3] = r;
   leds[led * 3 + 1] = g;
   leds[led * 3 + 2] = b;
   for  (int i = 0; i < ledNum; i++) {
-    Serial.printf(" %d", leds[i]);
+    //Serial.printf(" %d", leds[i]);
   }
-  Serial.println();
+  //Serial.println();
 }
 
 void  Controller::setLed(int led, unsigned long int c) {
@@ -32,7 +33,7 @@ void  Controller::setAllLed(int s, unsigned long int c) {
 }
 
 void  Controller::setAllLed(int s, int r, int g, int b) {
-  Serial.printf("set all leds %d %d %d %d %d \n", number, s, r, g, b);
+  //Serial.printf("set all leds %d %d %d %d %d \n", number, s, r, g, b);
   int l = 0; int h = 6;
   if (s == 1) {
     l = 0; h = 3;
@@ -50,11 +51,11 @@ void  Controller::displayLed () {
   ControlerUdp.beginPacket(IPAddress(192, 168, 4, number), controllerUDPPort);
   ControlerUdp.write(leds, 18);
   ControlerUdp.endPacket();
-  Serial.printf("Sending Controller %d\n",number);
+  //Serial.printf("Sending Controller %d\n",number);
   for  (int i = 0; i < 18; i++) {
-    Serial.printf(" %d", leds[i]);
+    //Serial.printf(" %d", leds[i]);
   }
-  Serial.println();
+  //Serial.println();
 }
 void  Controller::sendKeepalive() {
   if (millis() > (keepAlive + 200)) {
@@ -75,8 +76,8 @@ void  Controller::setPlayer (int player) {
   this->setAllLed(3, controllerPlayerColours[player]);
   this->displayLed();
   onPlayer[1] = player;
+  onPlayer[2] = player;
 };
-
 
 
 

@@ -1,3 +1,6 @@
+
+//#include "ScrollLib.h"
+
 #define LED_BLACK    0
 #define LED_RED_VERYLOW   (3 <<  11)
 #define LED_RED_LOW     (7 <<  11)
@@ -97,7 +100,7 @@ void display_scrollText(int Text) {
 }
 
 void displayText(int Text) {
-          matrix->clear();
+        matrix->clear();
         matrix->setCursor(0, 0);
         matrix->setTextColor(LED_GREEN_HIGH);
         matrix->print(Text);

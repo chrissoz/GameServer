@@ -1,4 +1,4 @@
-#include "ScrollLib.h"
+//#include "ScrollLib.h"
 
 
 //generic slection routine?
@@ -20,15 +20,18 @@ Adafruit_NeoMatrix *matrix = new Adafruit_NeoMatrix(mw, mh, PIN,
 //end matrix setup
 
 //network setup
+//esp2866 ucoment follwoing
 #include <ESP8266WiFi.h>
+//esp32 uncomment following
+//#include <WiFi.h>
 #include "WiFiUdp.h"
-//WiFiUDP EthernetUdp;
+WiFiUDP EthernetUdp;
 unsigned int UDPPort = 58266;  // local port to listen on
 WiFiUDP Udp;
 
 #include "Controller.h"
 Controller cnt[8] = {Controller(0), Controller(1), Controller(2), Controller(3), Controller(4), Controller(5), Controller(6), Controller(7)};
-int numControllers = 3;
+//int numControllers = 3;
 
 
 
@@ -39,7 +42,7 @@ int numControllers = 3;
 int gameMode = 0;
 #define gameCounterReset 500
 int gameCounter = gameCounterReset;
-int winScore = 10;
+int winScore = 8;
 int winner = 0;
 bool debug = false;
 char incomingPacket[255];
@@ -73,10 +76,13 @@ bool inProg = false;
 //end scrolltext variables
 
 void setup() {
+
   matrix->begin();
   matrix->setTextWrap(false);
   matrix->setBrightness(BRIGHTNESS);
   matrix->clear();
+  matrix->setCursor(0, 0);
+  matrix->print(F("Howdy"));
 
   Serial.begin(115200);
   Serial.print("Setting soft-AP ... ");
@@ -84,17 +90,17 @@ void setup() {
   display_scrollText("B");
 
   Udp.begin(UDPPort);
-  randomSeed(analogRead(0));
+  randomSeed(analogRead(1));
 
-  ESP.wdtDisable();
-  ESP.wdtEnable(WDTO_8S);
+  //ESP.wdtDisable();
+  //ESP.wdtEnable(WDTO_8S);
 }
 
 
 
 void loop() {
   delay(20);
-  for (int i = 1; i < numControllers; i++) {
+  for (int i = 1; i < numberControllers; i++) {
     cnt[i].sendKeepalive();
   }
   // scrolltext runs ever loop to scroll the text
@@ -105,6 +111,7 @@ void loop() {
   if (packetSize) {
     int len = Udp.read(incomingPacket, 255);
     if (debug) {
+      Serial.print("Incoming packet :");
       Serial.println(incomingPacket);
     }
     if (packetSize == 4) {
@@ -168,13 +175,8 @@ void loop() {
 
       }
       for (int i = controllerMin; i <= controllerMax; i++) {
-        Serial.printf("Count %d\n", i);
-        setcontall(i, 0, 0, 0);
-        controller[i] = 0;
-        controller[i + 5] = 0;
-
+        cnt[i].setPlayer(0);
       }
-      Serial.println (i);
       gameCounter == 30;
       gameMode = 2;
       break;
@@ -254,14 +256,14 @@ void loop() {
         matrix->fillRect(0, 0, 9, 9, c24to16(playerColours[winner]));
         matrix->show();
         for (int i = 2; i < 5; i++) {
-          setcontall(i, playerColours[winner]);
+          cnt[i].setPlayer(winner);
         }
       }
       if (gameCounter % 40 == 0) {
         matrix->fillRect(0, 0, 9, 9, playerColours[0]);
         matrix->show();
         for (int i = 2; i < 5; i++) {
-          setcontall(i, playerColours[0]);
+          cnt[i].setPlayer(0);
         }
       }
       //gamemode 20 is pause after win
@@ -283,40 +285,31 @@ void loop() {
           if (debug) {
             Serial.printf ("\nSet player %d controller %d colour %d\n", playerNumber, controllerNumber), playerColours[playerNumber];
           }
-          setcontall(controllerNumber, playerColours[playerNumber]);
-          controller[controllerNumber] = playerNumber;
+          cnt[controllerNumber].setPlayer(playerNumber);
         } else {
-          controller[controllerNumber] = 0;
-          setcontall(controllerNumber, 0, 0, 0);
+          cnt[controllerNumber].setPlayer(0);
           if (debug) {
             Serial.printf ("\nReset controller %d", controllerNumber);
           }
 
         }
-
-
       }
-
-
-
       if (((sw[1] + sw[2] + sw[3]) == 3)) {} else {
-        if (controller[cont] == 0) {} else {
+        if (cnt[cont].onPlayer[1] == 0) {} else {
+          int p = cnt[cont].onPlayer[1];
           if (debug) {
             Serial.printf ("\nmatch player %d colour %d controller %d\n", controller[cont], playerColours[controller[cont]], cont);
           }
-          setcontall(cont, 0, 0, 0);
-          score[controller[cont]]++;
+          score[p]++;
+
           //         matrix->drawPixel(controller[cont], score[controller[cont]] , c24to16(playerColours[controller[cont]]));
           //       matrix->show();
           displayScreen();
-          if (score[controller[cont]] == winScore) {
-            winner = controller[cont];
-            //took rest scores from here as handled in setup?
+          if (score[p] == winScore) {
+            winner = p;
             gameMode = 20;
-
           }
-          controller[cont] = 0;
-
+          cnt[cont].setPlayer(0);
         }
       }
       break;
@@ -327,75 +320,63 @@ void loop() {
         int side = random(1, 3);
         int playerNumber = random(1, 7);
         if (playerNumber <= numberPlayers) {
-          if (debug) {
+          //if (debug) {
             Serial.printf ("\nSet player %d controller %d colour %d side %d\n", playerNumber, controllerNumber, playerColours[playerNumber], side);
-          }
-          setcontall(controllerNumber, side, playerColours[playerNumber]);
-          controller[controllerNumber + ((side - 1) * 5)] = playerNumber;
+          //}
+          cnt[controllerNumber].setPlayer(playerNumber,side);
           if (game == 4) {
             int playerNumber2 = random(1, numberPlayers);
             if (playerNumber2 == playerNumber) {
               playerNumber2 = numberPlayers;
             }
+    
             if (side == 1) {
               side = 2;
             } else {
               side = 1;
             }
-            setcontall(controllerNumber, side, playerColours[playerNumber2]);
-            controller[controllerNumber + ((side - 1) * 5)] = playerNumber2;
+                    //if (debug) {
+              Serial.printf("side is %d p1 %d p2 %d\n", side, playerNumber, playerNumber2);
+            //}
+            cnt[controllerNumber].setPlayer(playerNumber2,side );
+          } else {
+            if (game == 4) {
+              cnt[controllerNumber].setPlayer(0);
+            } else {
+              cnt[controllerNumber].setPlayer(0,side);
+            }
           }
-        } else {
-          if (game == 4) {
-            controller[controllerNumber] = 0;
-            controller[controllerNumber + 5] = 0;
-            setcontall(controllerNumber, 0, 0, 0);
-
-          } else
-            controller[controllerNumber + ((side - 1) * 5)] = 0;
-          setcontall(controllerNumber, side, 0, 0, 0);
         }
-        Serial.print ("Reset controller");
-        Serial.println (controllerNumber + ((side - 1) * 5));
       }
-
 
 
       if (((sw[2] == 0) || (sw[1] == 0)) && isPacket) {
-        int offset = 0;
+        int side = 1;
         if (sw[1] == 0) {
-          offset = 5;
+           side = 2;
         }
 
-        if (controller[cont + offset] == 0) {} else {
-          if (debug) {
-            Serial.printf ("\nmatch player %d colour %d controller %d offset %d\n", controller[cont + offset], playerColours[controller[cont + offset]], cont, offset);
-          }
+        if (cnt[cont].onPlayer[side] == 0) {} else {
+          int p = cnt[cont].onPlayer[side];
+
+          //if (debug) {
+            Serial.printf ("\nmatch player %d  controller %d side %d\n", p , cont, side);
+          //}
           if (game == 4) {
-            if (offset == 0) {
-              controller[cont + 5] = 0;
-              setcontall(cont, 2, 0, 0, 0);
-            } else {
+            cnt[cont].setPlayer(0);
+          } else {
+            cnt[cont].setPlayer(0, side);
 
-              controller[cont] = 0;
-              setcontall(cont, 1, 0, 0, 0);
-
-            }
           }
-          setcontall(cont, 1 + (offset / 5), 0, 0, 0);
-          score[controller[cont + offset]]++;
+          score[p]++;
           displayScreen();
-          //matrix->drawPixel(controller[cont + offset], score[controller[cont + offset]] , c24to16(playerColours[controller[cont + offset]]));
-          //matrix->show();
-
-          if (score[controller[cont + offset]] == winScore) {
-            winner = controller[cont + offset];
+          if (score[p] == winScore) {
+            winner = p;
             gameMode = 20;
           }
-          controller[cont + offset] = 0;
-
         }
       }
+
       break;
     default:
       break;
@@ -414,45 +395,6 @@ void loop() {
 }
 
 
-void setcontall(int controller, int s, int r, int g, int b) {
-
-  int l = 0; int h = 6;
-  if (s == 1) {
-    l = 0; h = 3;
-  }
-
-  if (s == 2) {
-    l = 3; int h = 6;
-  }
-  Serial.printf("\ncontroller %d side %d r %d g %d b %d l %d h %d\n", controller, s, r, g, b, l, h);
-
-  for (int x = l; x < h; x++) {
-    leds[controller][x * 3] = r;
-    leds[controller][x * 3 + 1] = g;
-    leds[controller][x * 3 + 2] = b;
-
-  }
-  Udp.beginPacket(IPAddress(192, 168, 4, controller), UDPPort);
-  Udp.write(leds[controller], 18);
-  Udp.endPacket();
-  for  (int i = 0; i < 19; i++) {
-    Serial.printf(" %d", leds[controller][i]);
-  }
-  Serial.println();
-  if (debug) {
-    displayScreen();
-  }
-}
-void setcontall(int controller, int r, int g, int b) {
-  setcontall(controller, 3, r, g, b);
-}
-
-void setcontall(int controller, unsigned long int c) {
-  setcontall(controller,  ((c >> 16) & 0xff), ((c >> 8) & 0xff), (c & 0xff) );
-}
-void setcontall(int controller, int r, unsigned long int c) {
-  setcontall(controller, r,  ((c >> 16) & 0xff), ((c >> 8) & 0xff), (c & 0xff) );
-}
 
 unsigned int c24to16 (unsigned long int c) {
   int b = (c & 255) >> 3;
@@ -464,11 +406,11 @@ void displayScreen() {
   matrix->clear();
   if (debug) {
     //  debug for sent packets to controller
-    
-    for (int i=1;i<numberControllers;i++) {
-    
-    matrix->drawPixel(8, i + 4, matrix->Color(leds[i][0], leds[i][1], leds[i][2]));
-   matrix->drawPixel(9, i + 4, matrix->Color(leds[i][9], leds[i][10], leds[i][11]));
+
+    for (int i = 1; i < numberControllers; i++) {
+
+      matrix->drawPixel(8, i + 4, matrix->Color(leds[i][0], leds[i][1], leds[i][2]));
+      matrix->drawPixel(9, i + 4, matrix->Color(leds[i][9], leds[i][10], leds[i][11]));
     }
     //debug for recieved packet from controller
     matrix->drawPixel(6 + cont, 1 , matrix->Color(255 * sw[1], 255 * sw[1], 255 * sw[1]));

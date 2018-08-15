@@ -1,4 +1,4 @@
-#ifndef H_Controller
+#if !(defined(H_Controller))  
 #define H_Controller
 class Controller {
   private:
@@ -11,7 +11,7 @@ class Controller {
     Controller (int n) ;
     bool switches [3] = {0, 0, 0};
     bool isActive = false;
-    unsigned int onPlayer [2] = {0, 0};
+    unsigned int onPlayer [3] = {0, 0, 0};
     void setLed(int led, unsigned long int c);
     void setLed(int led, int r, int g, int b);
     void  setAllLed(int s, unsigned long int c);
@@ -20,5 +20,6 @@ class Controller {
     void sendKeepalive() ;
     void  setPlayer (int player, int side);
     void setPlayer (int player);
+    //void showController ();
 };
 #endif
