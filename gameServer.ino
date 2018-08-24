@@ -92,8 +92,8 @@ void setup() {
   Udp.begin(UDPPort);
   randomSeed(analogRead(1));
 
-  //ESP.wdtDisable();
-  //ESP.wdtEnable(WDTO_8S);
+  ESP.wdtDisable();
+  ESP.wdtEnable(WDTO_8S);
 }
 
 
