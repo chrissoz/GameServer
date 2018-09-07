@@ -6,8 +6,9 @@ class Controller {
     int number;
     const int ledNum = 18;
     const int switchNum = 3;
-    long int keepAlive;
+    long int keepAlive=0;
   public:
+    long int isAlive=0;
     Controller (int n) ;
     bool switches [3] = {0, 0, 0};
     bool isActive = false;
